@@ -55,7 +55,8 @@ import de.schierla.jbeagle.BeagleUtil.ProgressListener;
 public class JBeagle extends JFrame {
 	private static final long serialVersionUID = -3803590812601005122L;
 	JLabel title, author, page, id;
-	JButton upload, delete;
+	JButton browseButton, deleteButton, uploadButton;
+
 	BeagleBook book;
 	private JList<BeagleBook> books;
 	private DefaultListModel<BeagleBook> beagleBooks = new DefaultListModel<BeagleBook>();
@@ -67,6 +68,8 @@ public class JBeagle extends JFrame {
 			new ArrayBlockingQueue<Runnable>(10));
 	private JScrollPane scrollPane;
 	private JPanel detail;
+
+	final JFileChooser fc = new JFileChooser();
 
 	public JBeagle() {
 		setTitle("jBeagle");
@@ -159,36 +162,52 @@ public class JBeagle extends JFrame {
 		gbc_label_3.fill = GridBagConstraints.HORIZONTAL;
 		gbc_label_3.insets = new Insets(0, 0, 5, 5);
 		gbc_label_3.gridx = 0;
-		gbc_label_3.gridy = 3;
+		gbc_label_3.gridy = GridBagConstraints.RELATIVE;
 		detail.add(label_3, gbc_label_3);
 		page = new JLabel("<page>");
 		GridBagConstraints gbc_page = new GridBagConstraints();
 		gbc_page.fill = GridBagConstraints.HORIZONTAL;
 		gbc_page.insets = new Insets(0, 0, 5, 5);
 		gbc_page.gridx = 1;
-		gbc_page.gridy = 3;
+		gbc_page.gridy = GridBagConstraints.RELATIVE;
 		detail.add(page, gbc_page);
-		upload = new JButton("Upload");
-		GridBagConstraints gbc_upload = new GridBagConstraints();
-		gbc_upload.fill = GridBagConstraints.HORIZONTAL;
-		gbc_upload.insets = new Insets(0, 0, 0, 5);
-		gbc_upload.gridx = 0;
-		gbc_upload.gridy = 4;
-		detail.add(upload, gbc_upload);
-		delete = new JButton("Delete");
+		
+		browseButton = new JButton("Browse...");
+		GridBagConstraints gbc_browse = new GridBagConstraints();
+		gbc_browse.fill = GridBagConstraints.HORIZONTAL;
+		gbc_browse.insets = new Insets(0, 0, 0, 5);
+		gbc_browse.gridx = 0;
+		gbc_browse.gridy = GridBagConstraints.RELATIVE;
+		detail.add(browseButton, gbc_browse);
+		
+		deleteButton = new JButton("Delete");
 		GridBagConstraints gbc_delete = new GridBagConstraints();
 		gbc_delete.fill = GridBagConstraints.HORIZONTAL;
 		gbc_delete.insets = new Insets(0, 0, 0, 5);
 		gbc_delete.gridx = 1;
-		gbc_delete.gridy = 4;
-		detail.add(delete, gbc_delete);
+		gbc_delete.gridy = GridBagConstraints.RELATIVE;
+		detail.add(deleteButton, gbc_delete);
 
-		upload.addActionListener(new ActionListener() {
+		uploadButton = new JButton("Upload");
+		GridBagConstraints gbc_upload = new GridBagConstraints();
+		gbc_upload.fill = GridBagConstraints.HORIZONTAL;
+		gbc_upload.insets = new Insets(0, 0, 0, 5);
+		gbc_upload.gridx = 0;
+		gbc_upload.gridy = GridBagConstraints.RELATIVE;
+		detail.add(uploadButton, gbc_upload);
+		
+
+		browseButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				browseForBook();
+			}
+		});
+		uploadButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				uploadBook();
 			}
 		});
-		delete.addActionListener(new ActionListener() {
+		deleteButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				deleteBook();
 			}
@@ -223,18 +242,7 @@ public class JBeagle extends JFrame {
 		});
 	}
 
-	protected void uploadBook() {
-		if (beagle == null)
-			return;
-
-		// try {
-		// BufferedImage im = ImageIO.read(new File("006.png"));
-		// beagle.uploadUtilityPage(6, BeagleCompressor.encodeImage(im));
-		// } catch (IOException e) {
-		// e.printStackTrace();
-		// }
-
-		final JFileChooser fc = new JFileChooser();
+	protected void browseForBook() {
 		fc.setFileFilter(new FileFilter() {
 			@Override
 			public String getDescription() {
@@ -247,9 +255,29 @@ public class JBeagle extends JFrame {
 						|| file.getName().toLowerCase().endsWith(".pdf");
 			}
 		});
-
 		if (JFileChooser.APPROVE_OPTION == fc.showOpenDialog(this)) {
+//			previewBtn.setEnabled(true);
+			uploadButton.setEnabled(true);
+			PreviewContainer.getInstance().setSelectedFile(fc.getSelectedFile());
+		}
+	}
+
+	protected void uploadBook() {
+		// if (beagle == null) {
+		// return;
+		// }
+
+		// try {
+		// BufferedImage im = ImageIO.read(new File("006.png"));
+		// beagle.uploadUtilityPage(6, BeagleCompressor.encodeImage(im));
+		// } catch (IOException e) {
+		// e.printStackTrace();
+		// }
+
+		if (beagle != null && fc.getSelectedFile() != null) {
 			uploadPDFAsync(fc.getSelectedFile());
+		} else {
+			System.out.println("Beagle not connected, showing only preview");
 		}
 	}
 
@@ -263,7 +291,7 @@ public class JBeagle extends JFrame {
 							showProgress("Uploading page " + page + " of "
 									+ count + "...");
 						}
-					});
+					}, PreviewContainer.getRenderOptions());
 					updateBooks();
 				} catch (IOException ex) {
 					showProgress("Error: " + ex.getMessage());

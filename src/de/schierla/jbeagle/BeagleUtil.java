@@ -35,6 +35,7 @@ import org.jpedal.exception.PdfException;
 import org.jpedal.objects.PdfFileInformation;
 
 import de.schierla.jbeagle.ui.PagePreview;
+import de.schierla.jbeagle.ui.PreviewContainer;
 
 /**
  * Helper class for bluetooth device search
@@ -95,8 +96,9 @@ public class BeagleUtil {
 	 * @throws IOException
 	 *             if an error occurs
 	 */
-	public static void uploadPDF(BeagleConnector beagle, File file,
-			final ProgressListener progress) throws IOException {
+	public static void uploadPDF(final BeagleConnector beagle, File file,
+			final ProgressListener progress, final RenderOptions renderOptions)
+			throws IOException {
 		try {
 			final PdfDecoder decoder = new PdfDecoder();
 			decoder.openPdfFile(file.getAbsolutePath());
@@ -119,18 +121,24 @@ public class BeagleUtil {
 
 			// continue book if it already exists
 			int start = 0;
-			List<BeagleBook> existingBooks = beagle.listBooks();
-			for (BeagleBook book : existingBooks) {
-				if (uuid.equals(book.getId())) {
-					start = book.getLastPage();
+
+			if (beagle != null) {
+				// only list books if connected
+				List<BeagleBook> existingBooks = beagle.listBooks();
+				for (BeagleBook book : existingBooks) {
+					if (uuid.equals(book.getId())) {
+						start = book.getLastPage();
+					}
 				}
 			}
+
 			final int startpage = start;
 
 			new Thread(new Runnable() {
 				public void run() {
 					BeagleRenderer renderer = new BeagleRenderer(decoder,
-							author, title);
+							author, title, renderOptions);
+
 					try {
 						if (startpage == 0)
 							queue.put(BeagleCompressor.encodeImage(renderer
@@ -139,7 +147,12 @@ public class BeagleUtil {
 							BufferedImage image = renderer.render(i, false);
 							if (preview != null)
 								preview.showPage(image);
-							queue.put(BeagleCompressor.encodeImage(image));
+							
+							if (beagle != null){
+								queue.put(BeagleCompressor.encodeImage(image));
+							}else{
+//								PreviewContainer.getInstance().drawImage(image);
+							}
 						}
 					} catch (InterruptedException e) {
 						e.printStackTrace();
@@ -149,12 +162,14 @@ public class BeagleUtil {
 				}
 			}).start();
 
-			beagle.uploadBook(uuid, title, author);
-			for (int i = start; i <= pages; i++) {
-				beagle.uploadPage(i, queue.take());
-				progress.progressChanged(i, pages);
+			if (beagle != null) {
+				beagle.uploadBook(uuid, title, author);
+				for (int i = start; i <= pages; i++) {
+					beagle.uploadPage(i, queue.take());
+					progress.progressChanged(i, pages);
+				}
+				beagle.endBook();
 			}
-			beagle.endBook();
 
 		} catch (PdfException e) {
 			throw new IOException(e);
