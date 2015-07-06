@@ -1,14 +1,52 @@
 jBeagle
 =======
 
+This is a fork of the jBeagle project from https://github.com/schierla/jbeagle by Andreas Schierl.
+In addition to the original project it offers a way to preview the rendered pages and adjust them:
+
+- cropping from top, bottom or sides
+- horizontal and vertical scaling
+- brightness and contrast adjustment
+
+Here's an annotated screenshot for a basic introduction:
+![annotated screenshot](https://raw.githubusercontent.com/ligius-/jbeagle/master/docs/screenshot_20150706220528_manual.png)
+
+Tips and limitations
+====================
+Load the file first using the 'Browse' button and adjust the preview, without connecting the reader. If you connect the reader before adjusting there's a high chance it will time out. This will be improved by issuing a periodic ping.
+
+Try to keep the horizontal and vertical scaling factors equal for maximum sharpness.
+
+There are some cosmetic issues because of the transparent spinners.
+
+If you close the preview frame there is no way to get it back other than restarting the application.
+
+There's no reconnection, you have to restart the application.
+
+If you close the application make sure to memorize the settings first, they are not persisted.
+
+Not tested under Linux - a standard Serial Port connection option could be added which would ensure more compatibility.
+
+Brightness and contrast are tricky to adjust - a better option would be a gamma table.
+
+I could not get antialiasing to work properly - a better option would be a gaussian blur.
+
+
+
+
+Copy&paste description from the main project:
+=
+
 Java application for managing the txtr beagle
 
 jBeagle supports
+
 - *Listing* the books present on the beagle
 - *Deleting* books
 - *Uploading PDF* documents as ebooks
  
 jBeagle is based on
+
 - *bluecove* http://bluecove.org/ for bluetooth support
 - *jzlib* http://www.jcraft.com/jzlib/ for image compression
 - *JPedal* http://sourceforge.net/projects/jpedal/ for PDF rendering
