@@ -2,6 +2,9 @@ jBeagle
 =======
 
 This is a fork of the jBeagle project from https://github.com/schierla/jbeagle by Andreas Schierl.
+
+**Download link:**https://github.com/ligius-/jbeagle/releases/download/0.3/jBeagle-0.3-binary.jar
+
 In addition to the original project it offers a way to preview the rendered pages and adjust them:
 
 - cropping from top, bottom or sides
@@ -11,9 +14,10 @@ In addition to the original project it offers a way to preview the rendered page
 Here's an annotated screenshot for a basic introduction:
 ![annotated screenshot](https://raw.githubusercontent.com/ligius-/jbeagle/master/docs/screenshot_20150706220528_manual.png)
 
+
 Tips and limitations
 ====================
-Load the file first using the 'Browse' button and adjust the preview, without connecting the reader. If you connect the reader before adjusting there's a high chance it will time out. This will be improved by issuing a periodic ping.
+FIXED:Load the file first using the 'Browse' button and adjust the preview, without connecting the reader. If you connect the reader before adjusting there's a high chance it will time out. This will be improved by issuing a periodic ping.
 
 Try to keep the horizontal and vertical scaling factors equal for maximum sharpness.
 
@@ -21,7 +25,7 @@ There are some cosmetic issues because of the transparent spinners.
 
 If you close the preview frame there is no way to get it back other than restarting the application.
 
-There's no reconnection, you have to restart the application.
+FIXED:There's no reconnection, you have to restart the application.
 
 If you close the application make sure to memorize the settings first, they are not persisted.
 
