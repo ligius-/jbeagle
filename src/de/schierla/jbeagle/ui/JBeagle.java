@@ -66,6 +66,7 @@ public class JBeagle extends JFrame {
 
 	ThreadPoolExecutor pool = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES,
 			new ArrayBlockingQueue<Runnable>(10));
+	
 	private JScrollPane scrollPane;
 	private JPanel detail;
 
@@ -219,25 +220,69 @@ public class JBeagle extends JFrame {
 		setVisible(true);
 
 		showProgress("Searching for beagle...");
-		searchForBeagleAsync();
-	}
-
-	private void searchForBeagleAsync() {
-		pool.execute(new Runnable() {
+		
+		new Runnable() {
 			public void run() {
-				try {
-					while (beagle == null) {
-						beagle = BeagleUtil.searchForBeagle();
+				while (true){
+					try {
+						// periodically either try to connect or issue a ping
+						Thread.sleep(connectOrPingBeagle() ? 10000 : 2000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
 					}
+				}
+			}
+		}.run();
+	}
+	
+	/**
+	 * @return true if beagle is connected
+	 */
+	private boolean connectOrPingBeagle(){
+		boolean result = false;
+		
+		try {
+			if (beagle == null){
+				// try to search for the reader
+				beagle = BeagleUtil.searchForBeagle();
+				
+				// if beagle found do the handshake and book reading
+				if (beagle != null){
+					System.out.println("Beagle connected");
 					if (beagle.getPartnerId() == null) {
 						showProgress("Setting partner id...");
 						beagle.setPartnerId(Long.toHexString(
 								new Random().nextLong()).toUpperCase());
 					}
 					updateBooks();
-				} catch (IOException e) {
-					showProgress("Error: " + e.getMessage());
+					result = true;
+				}else{
+					System.out.println("Beagle not found");
 				}
+			}else{
+				// we have a connection, ping the reader as not to lose it
+				try {
+					if (beagle.pingIfNeeded()){
+						//System.out.println("PING");
+					}
+					result = true;
+				} catch (IOException e) {
+					e.printStackTrace();
+					// we lost connection, force reinit
+					beagle = null;
+				}
+			}
+		} catch (IOException e) {
+			showProgress("Error: " + e.getMessage());
+			e.printStackTrace();
+		}
+		return result;
+	}
+	
+	private void searchForBeagleAsync() {
+		pool.execute(new Runnable() {
+			public void run() {
+				connectOrPingBeagle();
 			}
 		});
 	}
@@ -263,21 +308,14 @@ public class JBeagle extends JFrame {
 	}
 
 	protected void uploadBook() {
-		// if (beagle == null) {
-		// return;
-		// }
-
-		// try {
-		// BufferedImage im = ImageIO.read(new File("006.png"));
-		// beagle.uploadUtilityPage(6, BeagleCompressor.encodeImage(im));
-		// } catch (IOException e) {
-		// e.printStackTrace();
-		// }
+		
+		// ensure beagle is connected
+		searchForBeagleAsync();
 
 		if (beagle != null && fc.getSelectedFile() != null) {
 			uploadPDFAsync(fc.getSelectedFile());
 		} else {
-			System.out.println("Beagle not connected, showing only preview");
+			showProgress("Beagle not connected, showing only preview");
 		}
 	}
 
@@ -344,6 +382,7 @@ public class JBeagle extends JFrame {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
 				progress.setText(text);
+				System.out.println(text);
 			}
 		});
 	}

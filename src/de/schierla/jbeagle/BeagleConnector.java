@@ -39,6 +39,11 @@ public class BeagleConnector {
 	private OutputStreamWriter output;
 
 	private OutputStream outputStream;
+	
+	// keep track of last action so that we don't timeout
+	private long lastWriteMillis;
+	
+	private static final long PING_INTERVAL = 20 * 1000;
 
 	public BeagleConnector(StreamConnection connection) throws IOException {
 		input = new BufferedReader(new InputStreamReader(
@@ -277,16 +282,69 @@ public class BeagleConnector {
 			throw new IOException("Invalid response " + line);
 	}
 
+	/**
+	 * Performs a ping (to keep the connection alive)
+	 * 
+	 * @throws IOException
+	 */
+	public void ping() throws IOException {
+		write("PING");
+	}
+
+	/**
+	 * 
+	 * @return true if we have performed a ping
+	 * @throws IOException
+	 */
+	public boolean pingIfNeeded() throws IOException{
+		if ((System.currentTimeMillis() - lastWriteMillis) > PING_INTERVAL){
+			System.out.println("PING");
+			ping();
+			return true;
+		}else{
+			return false;
+		}
+	}
+
 	private void write(byte[] binaryData) throws IOException {
-		// System.out.println(">> " + Arrays.toString(binaryData));
-		outputStream.write(binaryData);
-		outputStream.flush();
+		// // System.out.println(">> " + Arrays.toString(binaryData));
+		// outputStream.write(binaryData);
+		// outputStream.flush();
+		
+		// @see https://github.com/schierla/jbeagle/issues/2
+		int bs = 8192;
+		int tot = binaryData.length;
+		int ind = 0;
+		while (ind < tot) {
+			if (tot - ind >= bs) {
+				outputStream.write(binaryData, ind, bs);
+			} else
+				outputStream.write(binaryData, ind, tot - ind);
+
+			ind += bs;
+			outputStream.flush();
+			try {
+				Thread.sleep(150);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		lastWriteMillis = System.currentTimeMillis();
 	}
 
 	private void write(String string) throws IOException {
-		// System.out.println(">> " + string);
+		// // System.out.println(">> " + string);
 		output.write(string + "\n");
 		output.flush();
+		// @see https://github.com/schierla/jbeagle/issues/2
+		try {
+			Thread.sleep(150);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
+		lastWriteMillis = System.currentTimeMillis();
 	}
 
 }

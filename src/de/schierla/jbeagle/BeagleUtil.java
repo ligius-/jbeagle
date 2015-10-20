@@ -55,7 +55,10 @@ public class BeagleUtil {
 		if (devices == null)
 			return null;
 		for (RemoteDevice r : devices) {
-			if ("Beagle".equals(r.getFriendlyName(false))) {
+			final String deviceName = r.getFriendlyName(false);
+			System.out.println("Found paired device "+ deviceName);
+			if ("Beagle".equals(deviceName) || "txtr beagle".equals(deviceName)) {
+				System.out.println("... trying a connection to it");
 				try {
 					StreamConnection connection = (StreamConnection) Connector
 							.open("btspp://"
@@ -63,6 +66,7 @@ public class BeagleUtil {
 									+ ":1;authenticate=false;encrypt=false;master=false");
 					return new BeagleConnector(connection);
 				} catch (IOException e) {
+					e.printStackTrace();
 				}
 			}
 		}
@@ -150,6 +154,7 @@ public class BeagleUtil {
 							
 							if (beagle != null){
 								queue.put(BeagleCompressor.encodeImage(image));
+								beagle.pingIfNeeded();
 							}else{
 //								PreviewContainer.getInstance().drawImage(image);
 							}
@@ -167,6 +172,7 @@ public class BeagleUtil {
 				for (int i = start; i <= pages; i++) {
 					beagle.uploadPage(i, queue.take());
 					progress.progressChanged(i, pages);
+					beagle.pingIfNeeded();
 				}
 				beagle.endBook();
 			}
